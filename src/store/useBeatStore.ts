@@ -18,6 +18,8 @@ export interface PadState {
   mode: PlaybackMode;
   lpCutoff: number; // hz 200..20000
   reverbSend: number; // 0..1
+  muted: boolean;
+  soloed: boolean;
 }
 
 export interface PatternState {
@@ -98,6 +100,8 @@ function emptyPad(id: number): PadState {
     mode: "oneshot",
     lpCutoff: 20000,
     reverbSend: 0,
+    muted: false,
+    soloed: false,
   };
 }
 
@@ -122,6 +126,14 @@ function reverseBuffer(src: AudioBuffer): AudioBuffer {
 
 /** Per-pad active player tracking for choke groups. */
 const livePlayers = new Map<number, Tone.ToneBufferSource[]>();
+
+/** Returns true if this pad should be audible given the global solo state. */
+function isAudible(pad: PadState, pads: PadState[]): boolean {
+  if (pad.muted) return false;
+  const anySolo = pads.some((p) => p.soloed);
+  if (anySolo && !pad.soloed) return false;
+  return true;
+}
 
 function stopChokeGroup(pads: PadState[], group: number) {
   if (group <= 0) return;
@@ -254,6 +266,7 @@ export const useBeatStore = create<BeatStore>((set, get) => ({
   triggerPad: (id, velocity = 1, time) => {
     const pad = get().pads[id];
     if (!pad) return;
+    if (!isAudible(pad, get().pads)) return;
     if (pad.chokeGroup > 0) stopChokeGroup(get().pads, pad.chokeGroup);
     playPad(pad, velocity, time);
 
@@ -401,7 +414,7 @@ export const useBeatStore = create<BeatStore>((set, get) => ({
         if (p.steps[padId][step]) {
           const vel = (p.velocities[padId]?.[step] ?? 1);
           const pad = state.pads[padId];
-          if (pad) {
+          if (pad && isAudible(pad, state.pads)) {
             if (pad.chokeGroup > 0) stopChokeGroup(state.pads, pad.chokeGroup);
             playPad(pad, vel, time);
           }
@@ -510,6 +523,7 @@ export const useBeatStore = create<BeatStore>((set, get) => ({
           if (p.steps[padId][step]) {
             const pad = state.pads[padId];
             if (!pad?.buffer) return;
+            if (!isAudible(pad, state.pads)) return;
             const vel = pad.volume * (p.velocities[padId]?.[step] ?? 1);
             const buf = pad.reverse ? reverseBuffer(pad.buffer) : pad.buffer;
             const tBuf = new Tone.ToneAudioBuffer(buf);

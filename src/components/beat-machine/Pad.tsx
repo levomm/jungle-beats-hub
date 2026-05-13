@@ -79,6 +79,14 @@ export function Pad({ pad, index, hotkey }: Props) {
         {pad.chokeGroup > 0 && (
           <div className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-[var(--warn)]" />
         )}
+        {(pad.muted || pad.soloed) && (
+          <div className={cn(
+            "absolute bottom-1 right-1 px-1 rounded-[3px] text-[8px] font-mono uppercase",
+            pad.soloed ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "bg-[var(--warn)] text-[var(--warn-foreground)]",
+          )}>
+            {pad.soloed ? "S" : "M"}
+          </div>
+        )}
       </button>
       <input
         ref={fileRef}

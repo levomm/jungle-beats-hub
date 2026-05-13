@@ -2,6 +2,7 @@ import { useBeatStore } from "@/store/useBeatStore";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Waveform } from "./Waveform";
 
 function Knob({
   label, value, min, max, step, onChange, format,
@@ -38,6 +39,13 @@ export function PadEditor() {
         </div>
       </div>
 
+      <Waveform
+        buffer={pad.buffer}
+        start={pad.startTrim}
+        end={pad.endTrim}
+        onChange={(s, e) => update(pad.id, { startTrim: s, endTrim: e })}
+      />
+
       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
         <Knob label="Volume" value={pad.volume} min={0} max={1.5} step={0.01} onChange={(n) => update(pad.id, { volume: n })} />
         <Knob label="Pitch" value={pad.pitch} min={-24} max={24} step={1} onChange={(n) => update(pad.id, { pitch: n })} format={(n) => `${n > 0 ? "+" : ""}${n} st`} />
@@ -69,6 +77,31 @@ export function PadEditor() {
           )}
         >
           {pad.mode === "loop" ? "Loop" : "One-shot"}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={() => update(pad.id, { muted: !pad.muted, soloed: pad.muted ? pad.soloed : false })}
+          className={cn(
+            "h-8 rounded-md text-xs font-mono uppercase tracking-wider border transition-colors",
+            pad.muted
+              ? "bg-[var(--warn)] text-[var(--warn-foreground)] border-[var(--warn)]"
+              : "surface-2 text-[var(--muted-foreground)] border-[var(--border)] hover:text-[var(--foreground)]",
+          )}
+        >
+          Mute
+        </button>
+        <button
+          onClick={() => update(pad.id, { soloed: !pad.soloed, muted: pad.soloed ? pad.muted : false })}
+          className={cn(
+            "h-8 rounded-md text-xs font-mono uppercase tracking-wider border transition-colors",
+            pad.soloed
+              ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]"
+              : "surface-2 text-[var(--muted-foreground)] border-[var(--border)] hover:text-[var(--foreground)]",
+          )}
+        >
+          Solo
         </button>
       </div>
 

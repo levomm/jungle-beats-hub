@@ -6,6 +6,7 @@ import { PadEditor } from "./PadEditor";
 import { StepSequencer } from "./StepSequencer";
 import { PatternBar } from "./PatternBar";
 import { MasterFx } from "./MasterFx";
+import { SampleDrop } from "./SampleDrop";
 
 export function BeatMachine() {
   const ready = useBeatStore((s) => s.ready);
@@ -70,6 +71,7 @@ export function BeatMachine() {
       <main className="max-w-[1400px] mx-auto px-5 py-5 space-y-4">
         <Transport />
         <PatternBar />
+        <SampleDrop />
 
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4">
           <div className="space-y-4 min-w-0">
