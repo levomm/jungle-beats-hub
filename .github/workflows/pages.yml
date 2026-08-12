@@ -1,25 +1,19 @@
-name: Deploy UI preview to GitHub Pages
+name: Capture real UI screenshots
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
-  workflow_dispatch:
+    paths-ignore:
+      - 'docs/screenshots/**'
+      - 'README.md'
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
+  contents: write
 
 jobs:
-  build-and-deploy:
+  capture:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,11 +21,19 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm run build -- --base=/jungle-beats-hub/
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - run: npx playwright install --with-deps chromium
+      - name: Start application
+        run: npm run dev -- --host 127.0.0.1 > /tmp/ui.log 2>&1 &
+      - run: npx wait-on http://127.0.0.1:5173 --timeout 120000
+      - name: Capture desktop and mobile UI
+        run: |
+          mkdir -p docs/screenshots
+          npx playwright screenshot --wait-for-timeout 5000 --full-page --viewport-size "1440,1000" http://127.0.0.1:5173 docs/screenshots/ui-desktop.png
+          npx playwright screenshot --wait-for-timeout 5000 --full-page --device "iPhone 13" http://127.0.0.1:5173 docs/screenshots/ui-mobile.png
+      - name: Commit screenshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots
+          git diff --cached --quiet || git commit -m "docs: add real application UI screenshots"
+          git push
